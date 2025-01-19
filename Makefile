@@ -1,6 +1,6 @@
 
 CPPFLAGS :=
-CXXFLAGS := -std=c++20 -Werror -Wall
+CXXFLAGS := -std=c++20 -Werror -Wall -Wno-error=unused-variable
 
 .PHONY: dirs
 
