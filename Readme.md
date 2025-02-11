@@ -28,9 +28,9 @@ fork call and the select call to handle stdin, stdout and stderr:
 
 Examples:
 
-- **compile1**: Call gcc to compile C++ source code.
-  Supply source code via stdin. Process regular output and error messages.
+- **echodemo/echoserver**: Demo calls server to strike up a conversation.
 
-# How to build (Linux only)
+# How to build and run (Linux only)
 
     make
+    ./echodemo
