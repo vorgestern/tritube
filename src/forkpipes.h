@@ -21,6 +21,7 @@ class forkpipes3
     int pipe_in[2], pipe_out[2], pipe_err[2];
     int childpid {0};
     int closed {0};
+    friend int childpid(const forkpipes3&X){ return X.childpid; }
     friend bool isparent(const forkpipes3&X){ return X.childpid>0; }
     friend bool ischild(const forkpipes3&X){ return X.childpid==0; }
     friend int parent_write(const forkpipes3&X){ return X.pipe_in[PIPE_WRITE]; }
