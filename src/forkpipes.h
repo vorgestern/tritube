@@ -5,7 +5,7 @@ class forkpipes
 {
     static const int PIPE_READ=0, PIPE_WRITE=1;
     int pipe_in[2], pipe_out[2];
-    pid_t childpid{0};
+    int childpid {0};
     friend bool isparent(const forkpipes&X){ return X.childpid>0; }
     friend bool ischild(const forkpipes&X){ return X.childpid==0; }
     friend int parent_write(const forkpipes&X){ return X.pipe_in[PIPE_WRITE]; }
@@ -19,7 +19,7 @@ class forkpipes3
 {
     static const int PIPE_READ=0, PIPE_WRITE=1;
     int pipe_in[2], pipe_out[2], pipe_err[2];
-    pid_t childpid {0};
+    int childpid {0};
     int closed {0};
     friend bool isparent(const forkpipes3&X){ return X.childpid>0; }
     friend bool ischild(const forkpipes3&X){ return X.childpid==0; }
