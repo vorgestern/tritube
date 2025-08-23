@@ -16,20 +16,20 @@ b/examples/%.o: examples/%.cpp src/forkpipes.h
 	@echo examples $<
 	g++ -c $(CPPFLAGS) $(CXXFLAGS) -I src -o $@ $<
 
-compile1: b/examples/compile1.o b/forkpipes.o b/forkpipes3.o
+compile1: b/examples/compile1.o libtritube.a
 	@g++ -o $@ $(LDFLAGS) $^
 
-echoserver: b/examples/echoserver.o b/forkpipes.o b/forkpipes3.o
+echoserver: b/examples/echoserver.o libtritube.a
 	@g++ -o $@ $(LDFLAGS) $^
 
-echodemo: b/examples/echodemo.o b/forkpipes3.o
+echodemo: b/examples/echodemo.o libtritube.a
 	@g++ -o $@ $(LDFLAGS) $^
 
 b/forkpipes.o: src/forkpipes.cpp src/forkpipes.h
-	@g++ -o $@ -c $(LDFLAGS) $^
+	@g++ -o $@ -c $(CXXFLAGS) $<
 b/forkpipes3.o: src/forkpipes3.cpp src/forkpipes.h
-	@g++ -o $@ -c $(LDFLAGS) $^
+	@g++ -o $@ -c $(CXXFLAGS) $<
 
 libtritube.a: b/forkpipes.o b/forkpipes3.o
-	@echo $<
+	@echo $@
 	@ar -crs $@ $^

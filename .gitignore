@@ -3,3 +3,4 @@ b/*
 compile1
 echoserver
 *.o
+*.a
