@@ -43,7 +43,7 @@ function mkworkspace()
         projects={},
         packages={}
     }
-    workspace "guidrei"
+    workspace "tritube"
     location (Wks.location)
     configurations (Wks.configurations)
     objdir (Wks.obj.."/%{prj.name}")

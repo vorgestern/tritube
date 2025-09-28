@@ -10,6 +10,7 @@ includedirs {"../../include"}
 if Workspace.system=="windows" then
     vpaths {
         [""]="*.cpp",
+        win32="win32/*.cpp",
         include="../../include/tritube/*.h"
     }
 end
