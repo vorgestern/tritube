@@ -4,6 +4,7 @@ package.loaded.Workspace=mkworkspace()
 premake.path="packages;"..premake.path
 addpackage "userlocal"
 
+require "src.tritube"
 require "src.tritube_demo"
 
 info()

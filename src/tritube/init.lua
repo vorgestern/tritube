@@ -1,16 +1,13 @@
 
 local Workspace=require "Workspace"
 
-project "tritube_demo"
-kind "ConsoleApp"
+project "tritube"
+kind "StaticLib"
 files {"*.cpp", "../../include/tritube/*.h"}
 
 includedirs {"../../include"}
-links "tritube"
 
 if Workspace.system=="windows" then
-    links "msvcrtd.lib"
-    linkoptions "/NODEFAULTLIB:libcmt.lib"
     vpaths {
         [""]="*.cpp",
         include="../../include/tritube/*.h"
@@ -24,4 +21,4 @@ omitframepointer "on"
 cppdialect "C++20"
 disablewarnings {4100}
 
-table.insert(Workspace.projects, ConsoleApp "tritube_demo")
+table.insert(Workspace.projects, StaticLib "tritube")
