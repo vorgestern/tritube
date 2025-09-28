@@ -3,7 +3,7 @@ local Workspace=require "Workspace"
 
 project "tritube"
 kind "StaticLib"
-files {"*.cpp", "../../include/tritube/*.h"}
+files {"**.cpp", "../../include/tritube/*.h"}
 
 includedirs {"../../include"}
 
