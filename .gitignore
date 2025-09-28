@@ -5,3 +5,8 @@ echodemo
 echoserver
 *.o
 *.a
+
+bin
+oo
+vs2022
+gmake
