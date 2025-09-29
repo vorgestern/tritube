@@ -162,22 +162,18 @@ string piper4(fspath&fullpath, string_view args)
         {
             if (nrout>0)
             {
-                if (nrout>0)
+                merk.emplace_back(ccout);
+                if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout))
                 {
-                    // fwrite(ccout, 1, nrout, stdout);
-                    merk.emplace_back(ccout);
-                    if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout))
+                    auto err=GetLastError();
+                    switch (err)
                     {
-                        auto err=GetLastError();
-                        switch (err)
+                        case ERROR_IO_PENDING: break;
+                        case ERROR_BROKEN_PIPE: err_from_stdout=true; break;
+                        default:
                         {
-                            case ERROR_IO_PENDING: break;
-                            case ERROR_BROKEN_PIPE: err_from_stdout=true; break;
-                            default:
-                            {
-                                printf("std input: err=%d\n", err);
-                                break;
-                            }
+                            printf("std input: err=%d\n", err);
+                            break;
                         }
                     }
                 }
