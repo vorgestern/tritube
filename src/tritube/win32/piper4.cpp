@@ -173,109 +173,96 @@ string piper4(fspath&fullpath, string_view args)
 
 rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
 {
-    vector<string>merk_out, merk_err;
-
     prochelper ph;
-    const int rc0=startpiped(ph, fullpath.string(), args);
-    if (rc0==0)
+    const int rcstart=startpiped(ph, fullpath.string(), args);
+    if (rcstart!=0) return {-1,{},{}};
+
+    CloseHandle(ph.write_to_stdin);
+
+    int rcx=-1;
+    vector<string>merk_out, merk_err;
+    bool closed_stderr=false, closed_stdout=false;
+    char ccout[1024]="", ccerr[1024]="";
+    DWORD nrout=0, nrerr=0;
+    bool fterm=false;
+
+    if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout)) closed_stdout=true;
+    if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr)) closed_stderr=true;
+
+    auto handle_stderr=[&nrerr,&ccerr,&closed_stderr,&ph,&merk_err]()
     {
-        CloseHandle(ph.write_to_stdin);
-
-        int rcx=-1;
-        bool closed_stderr=false, closed_stdout=false;
-        char ccout[1024]="", ccerr[1024]="";
-        DWORD nrout=0, nrerr=0;
-        if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout)) closed_stdout=true;
-        if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr)) closed_stderr=true;
-
-        bool fterm=false;
-
-        auto handle_stderr=[&nrerr,&ccerr,&closed_stderr,&ph,&merk_err]()
+        if (nrerr>0)
         {
-            if (nrerr>0)
+            merk_err.emplace_back(ccerr);
+            if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr))
             {
-                merk_err.emplace_back(ccerr);
-                if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr))
+                switch (GetLastError())
                 {
-                    switch (GetLastError())
-                    {
-                        case ERROR_IO_PENDING: break;
-                        default:
-                        case ERROR_BROKEN_PIPE: closed_stderr=true; break;
-                    }
+                    case ERROR_IO_PENDING: break;
+                    default:
+                    case ERROR_BROKEN_PIPE: closed_stderr=true; break;
                 }
             }
-        };
-
-        auto handle_stdout=[&nrout,&ccout,&closed_stdout,&ph,&merk_out]()
-        {
-            if (nrout>0)
-            {
-                merk_out.emplace_back(ccout);
-                if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout))
-                {
-                    switch (GetLastError())
-                    {
-                        case ERROR_IO_PENDING: break;
-                        default:
-                        case ERROR_BROKEN_PIPE: closed_stdout=true; break;
-                    }
-                }
-            }
-        };
-
-        auto handle_process=[&fterm, &rcx, &closed_stderr, &closed_stdout, ph]()
-        {
-            unsigned long exitcode=STILL_ACTIVE;
-            if (GetExitCodeProcess(ph.process, &exitcode))
-            {
-                if (exitcode!=STILL_ACTIVE){ rcx=exitcode; fterm=true; }
-            }
-            else fterm=true;
-        };
-
-        const int numobj=3;
-        HANDLE objects[numobj]={ph.olout.hEvent, ph.olerr.hEvent, ph.process};
-        function<void()>handlers[numobj]={handle_stdout, handle_stderr, handle_process};
-        unsigned nc=0;
-        while (!fterm)
-        {
-            ++nc;
-            if (nc&1)
-            {
-                objects[0]=ph.olout.hEvent; handlers[0]=handle_stdout;
-                objects[1]=ph.olerr.hEvent; handlers[1]=handle_stderr;
-            }
-            else
-            {
-                objects[0]=ph.olerr.hEvent; handlers[0]=handle_stderr;
-                objects[1]=ph.olout.hEvent; handlers[1]=handle_stdout;
-            }
-            const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
-            if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj)
-            {
-                const int obj=r-WAIT_OBJECT_0;
-                switch (obj)
-                {
-                    case 0: handlers[0](); break;
-                    case 1: handlers[1](); break;
-                    case 2: handlers[2](); break;
-                    default: break;
-                }
-            }
-            else if (r>=WAIT_ABANDONED_0 && r<WAIT_ABANDONED_0+numobj) break; // TSNH
-            else if (r==WAIT_TIMEOUT)
-            {
-                if (closed_stdout && closed_stderr) fterm=true;
-                break;
-            }
-            else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
-            else                    { fterm=true; break; } // TSNH
         }
-        string so, se;
-        for (auto&m: merk_out) so.append(m);
-        for (auto&m: merk_err) se.append(m);
-        return {rcx, so, se};
+    };
+
+    auto handle_stdout=[&nrout,&ccout,&closed_stdout,&ph,&merk_out]()
+    {
+        if (nrout>0)
+        {
+            merk_out.emplace_back(ccout);
+            if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout))
+            {
+                switch (GetLastError())
+                {
+                    case ERROR_IO_PENDING: break;
+                    default:
+                    case ERROR_BROKEN_PIPE: closed_stdout=true; break;
+                }
+            }
+        }
+    };
+
+    auto handle_process=[&fterm, &rcx, &closed_stderr, &closed_stdout, ph]()
+    {
+        unsigned long exitcode=STILL_ACTIVE;
+        if (GetExitCodeProcess(ph.process, &exitcode))
+        {
+            if (exitcode!=STILL_ACTIVE){ rcx=exitcode; fterm=true; }
+        }
+        else fterm=true;
+    };
+
+    const int numobj=3;
+    HANDLE objects[numobj]={ph.olout.hEvent, ph.olerr.hEvent, ph.process};
+    function<void()>handlers[numobj]={handle_stdout, handle_stderr, handle_process};
+    unsigned nc=0;
+    while (!fterm)
+    {
+        ++nc;
+        if (nc&1)
+        {
+            objects[0]=ph.olout.hEvent; handlers[0]=handle_stdout;
+            objects[1]=ph.olerr.hEvent; handlers[1]=handle_stderr;
+        }
+        else
+        {
+            objects[0]=ph.olerr.hEvent; handlers[0]=handle_stderr;
+            objects[1]=ph.olout.hEvent; handlers[1]=handle_stdout;
+        }
+        const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
+        if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj) handlers[r-WAIT_OBJECT_0]();
+        else if (r>=WAIT_ABANDONED_0 && r<WAIT_ABANDONED_0+numobj) break; // TSNH
+        else if (r==WAIT_TIMEOUT)
+        {
+            if (closed_stdout && closed_stderr) fterm=true;
+            break;
+        }
+        else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
+        else                    { fterm=true; break; } // TSNH
     }
-    else return {-1,{},{}};
+    string so, se;
+    for (auto&m: merk_out) so.append(m);
+    for (auto&m: merk_err) se.append(m);
+    return {rcx, so, se};
 }
