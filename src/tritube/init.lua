@@ -8,11 +8,10 @@ files {"*.cpp", "../../include/tritube/*.h"}
 includedirs {"../../include"}
 
 if Workspace.system=="windows" then
-    files "win32/*.cpp"
+    files {"win32/*.cpp", "win32/*.h"}
     vpaths {
-        [""]="*.cpp",
-        win32="win32/*.cpp",
-        include="../../include/tritube/*.h"
+        [""]={"*.cpp", "../../include/tritube/*.h"},
+        win32={"win32/*.cpp", "win32/*.h"}
     }
 end
 
