@@ -8,13 +8,12 @@ using namespace tritube;
 void demo_default()
 {
     auto Text=exec_sync<string, xfpath>("git.exe", "--version");
-    cout<<"demo2: "<<Text<<"\n";
+    if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
+    else cout<<"No output for 'git.exe --version\n";
 }
 
 int main(int argc, char*argv[])
 {
-    // demo1();
-
     if (argc>1)
     {
         const string prog=argv[1];
@@ -25,6 +24,5 @@ int main(int argc, char*argv[])
         else cout<<"No output for '"<<prog<<" "<<args<<"\n";
     }
     else demo_default();
-
     return 0;
 }
