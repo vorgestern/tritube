@@ -171,6 +171,28 @@ string piper4(fspath&fullpath, string_view args)
 
 // ============================================================================
 
+struct inputchannel_async
+{
+    HANDLE read_from_child;
+    OVERLAPPED ol;
+    bool closed {false};
+    char buffer[1024];
+    DWORD nr {0};
+    void read()
+    {
+        nr=0;
+        if (!ReadFile(read_from_child, buffer, sizeof buffer, &nr, &ol))
+        {
+            switch (GetLastError())
+            {
+                case ERROR_IO_PENDING: break;
+                default:
+                case ERROR_BROKEN_PIPE: closed=true; break;
+            }
+        }
+    }
+};
+
 rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
 {
     prochelper ph;
@@ -179,26 +201,9 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
 
     CloseHandle(ph.write_to_stdin);
 
-    struct channel
+    struct channel: public inputchannel_async
     {
-        HANDLE read_from_child;
-        OVERLAPPED ol;
         vector<string>merk {};
-        bool closed {false};
-        char buffer[1024];
-        DWORD nr {0};
-        void read()
-        {
-            if (!ReadFile(read_from_child, buffer, sizeof buffer, &nr, &ol))
-            {
-                switch (GetLastError())
-                {
-                    case ERROR_IO_PENDING: break;
-                    default:
-                    case ERROR_BROKEN_PIPE: closed=true; break;
-                }
-            }
-        }
     } out={ph.read_from_stdout, ph.olout},
       err={ph.read_from_stderr, ph.olerr};
 
@@ -241,13 +246,13 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
         ++nc;
         if (nc&1)
         {
-            objects[0]=ph.olout.hEvent; handlers[0]=handle_stdout;
-            objects[1]=ph.olerr.hEvent; handlers[1]=handle_stderr;
+            objects[0]=out.ol.hEvent; handlers[0]=handle_stdout;
+            objects[1]=err.ol.hEvent; handlers[1]=handle_stderr;
         }
         else
         {
-            objects[0]=ph.olerr.hEvent; handlers[0]=handle_stderr;
-            objects[1]=ph.olout.hEvent; handlers[1]=handle_stdout;
+            objects[0]=err.ol.hEvent; handlers[0]=handle_stderr;
+            objects[1]=out.ol.hEvent; handlers[1]=handle_stdout;
         }
         const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
         if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj) handlers[r-WAIT_OBJECT_0]();
