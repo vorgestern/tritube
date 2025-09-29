@@ -3,11 +3,12 @@ local Workspace=require "Workspace"
 
 project "tritube"
 kind "StaticLib"
-files {"**.cpp", "../../include/tritube/*.h"}
+files {"*.cpp", "../../include/tritube/*.h"}
 
 includedirs {"../../include"}
 
 if Workspace.system=="windows" then
+    files "win32/*.cpp"
     vpaths {
         [""]="*.cpp",
         win32="win32/*.cpp",

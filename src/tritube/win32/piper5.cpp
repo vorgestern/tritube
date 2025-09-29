@@ -20,9 +20,9 @@ struct prochelper
 
 static int startpiped(prochelper&ph, const string&exec, string_view arguments)
 {
-    string commandline=format("\"{}\" {}", exec, arguments);
+    string commandline=format("{} {}", "git", arguments);
 
-//  cout<<format("startpiped: {} ... ({})\n", exec, commandline);
+cout<<format("startpiped: {} ... ({})\n", exec, commandline);
 
     HANDLE newstdin, write_stdin, newstdout, read_stdout, newstderr, read_stderr;
 
@@ -72,7 +72,6 @@ static int startpiped(prochelper&ph, const string&exec, string_view arguments)
 
     PROCESS_INFORMATION pi;
     const BOOL f=CreateProcess(exec.c_str(), commandline.data(),0L,0L,TRUE,0,0L,0L,&si,&pi);
-
     CloseHandle(newstdin);
     CloseHandle(newstdout);
     CloseHandle(newstderr);
@@ -99,7 +98,7 @@ static int startpiped(prochelper&ph, const string&exec, string_view arguments)
     }
 }
 
-string piper4(fspath&fullpath, string_view args)
+string piper5(fspath&fullpath, string_view args)
 {
     vector<string>merk;
 
@@ -107,7 +106,7 @@ string piper4(fspath&fullpath, string_view args)
     const int rc0=startpiped(ph, fullpath.string(), args);
     if (rc0==0)
     {
-//      printf("piper4: running\n");
+        printf("piper5: running\n");
         if (false)
         {
             DWORD nw;
@@ -117,46 +116,15 @@ string piper4(fspath&fullpath, string_view args)
         }
         CloseHandle(ph.write_to_stdin);
 
-        bool err_from_stderr=false, err_from_stdout=false;
-        char ccout[1024]="", ccerr[1024]="";
-        DWORD nrout=0, nrerr=0;
+        bool err_from_stdout=false;
+        char ccout[1024]="";
+        DWORD nrout=0;
         if (!ReadFile(ph.read_from_stdout, ccout, sizeof ccout, &nrout, &ph.olout))
         {
-            err_from_stdout=true;
-//          const int err=GetLastError();
-//          printf("Kann Lesevorgang von stdout nicht starten (%d).\n", err);
-        }
-        if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr))
-        {
-            err_from_stderr=true;
-//          const int err=GetLastError();
-//          printf("Kann Lesevorgang von stderr nicht starten (%d).\n", err);
+            const int err=GetLastError();
+            printf("Kann Lesevorgang von stdout nicht starten (%d).\n", err);
         }
         bool fterm=false;
-
-        auto handle_stderr=[&nrerr,&ccerr,&err_from_stderr,&ph]()
-        {
-            if (nrerr>0)
-            {
-//              printf("<");
-                fwrite(ccerr, 1, nrerr, stdout);
-//              printf(">");
-                if (!ReadFile(ph.read_from_stderr, ccerr, sizeof ccerr, &nrerr, &ph.olerr))
-                {
-                    auto err=GetLastError();
-                    switch (err)
-                    {
-                        case ERROR_IO_PENDING: break;
-                        case ERROR_BROKEN_PIPE: err_from_stderr=true; break;
-                        default:
-                        {
-                            printf("error input: err=%d\n", err);
-                            break;
-                        }
-                    }
-                }
-            }
-        };
 
         auto handle_stdout=[&nrout,&ccout,&err_from_stdout,&ph,&merk]()
         {
@@ -172,7 +140,7 @@ string piper4(fspath&fullpath, string_view args)
                         switch (err)
                         {
                             case ERROR_IO_PENDING: break;
-                            case ERROR_BROKEN_PIPE: err_from_stdout=true; break;
+                            case ERROR_BROKEN_PIPE: err_from_stdout=true; printf("=========== err from stdout ============\n"); break;
                             default:
                             {
                                 printf("std input: err=%d\n", err);
@@ -184,31 +152,19 @@ string piper4(fspath&fullpath, string_view args)
             }
         };
 
-        auto handle_process=[&fterm, &err_from_stderr, &err_from_stdout, &ph]()
+        auto handle_process=[&fterm, &err_from_stdout, &ph]()
         {
             unsigned long exitcode=STILL_ACTIVE;
             BOOL f=GetExitCodeProcess(ph.process, &exitcode);
             fterm=!f || exitcode!=STILL_ACTIVE;
-//          if (fterm) printf("Terminate (pipes: out %s, err %s)\n", err_from_stdout?"broken":"open", err_from_stderr?"broken":"open");
+            if (fterm) printf("Terminate (outpipe %s)\n", err_from_stdout?"broken":"open");
         };
 
-        const int numobj=3;
-        HANDLE objects[numobj]={ph.olout.hEvent, ph.olerr.hEvent, ph.process};
-        function<void()>handlers[numobj]={handle_stdout, handle_stderr, handle_process};
-        unsigned nc=0;
+        const int numobj=2;
+        HANDLE objects[numobj]={ph.olout.hEvent, ph.process};
+        function<void()>handlers[numobj]={handle_stdout, handle_process};
         while (!fterm)
         {
-            ++nc;
-            if (nc&1)
-            {
-                objects[0]=ph.olout.hEvent; handlers[0]=handle_stdout;
-                objects[1]=ph.olerr.hEvent; handlers[1]=handle_stderr;
-            }
-            else
-            {
-                objects[0]=ph.olerr.hEvent; handlers[0]=handle_stderr;
-                objects[1]=ph.olout.hEvent; handlers[1]=handle_stdout;
-            }
             auto rc=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
             if (rc>=WAIT_OBJECT_0 && rc<WAIT_OBJECT_0+numobj)
             {
@@ -217,7 +173,6 @@ string piper4(fspath&fullpath, string_view args)
                 {
                     case 0: handlers[0](); break;
                     case 1: handlers[1](); break;
-                    case 2: handlers[2](); break;
                     default:
                     {
                         printf("WFMO: unexpected object %d\n", obj);
@@ -233,11 +188,8 @@ string piper4(fspath&fullpath, string_view args)
             }
             else if (rc==WAIT_TIMEOUT)
             {
-                if (err_from_stdout && err_from_stderr)
-                {
-                    printf("Beide Pipes sind unterbrochen.\n");
-                    fterm=true;
-                }
+                // printf("Beide Pipes sind unterbrochen.\n");
+                // fterm=true;
                 break;
             }
             else if (rc==WAIT_FAILED)
@@ -253,7 +205,7 @@ string piper4(fspath&fullpath, string_view args)
             }
         }
     }
-    else printf("piper4: startpiped fail: rc0=%d\n", rc0);
+    else printf("piper5: startpiped fail: rc0=%d\n", rc0);
     string s;
     for (auto&m: merk) s.append(m);
     return s;

@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <filesystem>
 #include <tritube/tritube.h>
 
 using namespace std;
@@ -21,27 +20,14 @@ static vector<fspath> pathdirectories()
     return result;
 }
 
-static optional<fspath> findinpath(string_view relpath)
-{
-    auto Paths=pathdirectories();
-    for (auto&k: Paths)
-    {
-        const auto versuch=k / relpath;
-        if (filesystem::exists(versuch)) return versuch;
-    }
-    return {};
-}
-
 // ============================================================================
 
-template<tritube::xfind X>static fspath applpath(string_view simple_name);
-
-template<>fspath applpath<xfliteral>(string_view versuch)
+template<> optional<fspath> tritube::applpath<xfliteral>(string_view versuch)
 {
     if (filesystem::exists(versuch)) return versuch;
     else return {};
 }
-template<>fspath applpath<xfrelative>(string_view simple_name)
+template<> optional<fspath> tritube::applpath<xfrelative>(string_view simple_name)
 {
     error_code ec;
     auto here=filesystem::current_path(ec);
@@ -50,32 +36,13 @@ template<>fspath applpath<xfrelative>(string_view simple_name)
     if (filesystem::exists(versuch)) return versuch;
     else return {};
 }
-template<>fspath applpath<xfpath>(string_view simple_name)
+template<> optional<fspath> tritube::applpath<xfpath>(string_view relpath)
 {
-    auto App=findinpath(simple_name);
-    if (App.has_value()) return App.value();
-    else return {};
-}
-
-// ============================================================================
-
-template<>string tritube::exec_sync<string,xfliteral>(string_view exec, string_view args)
-{
-    auto app=applpath<xfliteral>(exec);
-    auto commandline=string(exec)+" "+string(args);
-    return app.string();
-}
-
-template<>string tritube::exec_sync<string,xfrelative>(string_view exec, string_view args)
-{
-    auto app=applpath<xfrelative>(exec);
-    auto commandline=string(exec)+" "+string(args);
-    return app.string();
-}
-
-template<>string tritube::exec_sync<string,xfpath>(string_view exec, string_view args)
-{
-    auto app=applpath<xfpath>(exec);
-    auto commandline=string(exec)+" "+string(args);
-    return app.string();
+    auto Paths=pathdirectories();
+    for (auto&k: Paths)
+    {
+        const auto versuch=k / relpath;
+        if (filesystem::exists(versuch)) return versuch;
+    }
+    return {};
 }
