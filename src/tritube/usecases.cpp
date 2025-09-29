@@ -27,6 +27,7 @@ template<> optional<fspath> tritube::applpath<xfliteral>(string_view versuch)
     if (filesystem::exists(versuch)) return versuch;
     else return {};
 }
+
 template<> optional<fspath> tritube::applpath<xfrelative>(string_view simple_name)
 {
     error_code ec;
@@ -36,6 +37,7 @@ template<> optional<fspath> tritube::applpath<xfrelative>(string_view simple_nam
     if (filesystem::exists(versuch)) return versuch;
     else return {};
 }
+
 template<> optional<fspath> tritube::applpath<xfpath>(string_view relpath)
 {
     auto Paths=pathdirectories();

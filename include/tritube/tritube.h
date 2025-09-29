@@ -10,7 +10,6 @@ std::string piper5(std::filesystem::path&fullpath, std::string_view args);
 
 namespace tritube
 {
-    const enum class usecase {a,b,c,d,e} ttwholetext=usecase::a, ttlinewise=usecase::b;
     const enum class xfind {a,b,c,d,e} xfliteral=xfind::a, xfrelative=xfind::b, xfpath=xfind::c;
 
     template<xfind X> std::optional<std::filesystem::path> applpath(std::string_view simple_name);
