@@ -14,7 +14,7 @@ void demo_default()
 
 int main(int argc, char*argv[])
 {
-    if (argc>1)
+    if constexpr (false && argc>1)
     {
         const string prog=argv[1];
         string args;
@@ -22,6 +22,20 @@ int main(int argc, char*argv[])
         auto Text=exec_sync<string, xfpath>(prog, args);
         if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
         else cout<<"No output for '"<<prog<<" "<<args<<"\n";
+    }
+    else if (argc>1)
+    {
+        if (auto p=applpath<xfpath>(argv[1]); p.has_value())
+        {
+            string args;
+            for (auto j=2; j<argc; ++j) args.append(j>2?" "s+argv[j]:argv[j]);
+            auto [rc, out, err]=exec_simple<rc_out_err>(p.value(), args);
+            cout<<  "== return code =================================\n"<<rc
+                <<"\n== stdout ======================================\n"<<out
+                <<"\n== stderr ======================================\n"<<err
+                <<"\n================================================\n";
+        }
+        else cout<<"Executable not found for '"<<argv[1]<<"'\n";
     }
     else demo_default();
     return 0;
