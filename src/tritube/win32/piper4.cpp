@@ -191,6 +191,12 @@ struct inputchannel_async
             }
         }
     }
+    void closehandles()
+    {
+        CloseHandle(ol.hEvent);
+        CloseHandle(read_from_child);
+        closed=true;
+    }
 };
 
 rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
@@ -265,6 +271,8 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
         else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
         else                    { fterm=true; break; } // TSNH
     }
+    out.closehandles();
+    err.closehandles();
     string so, se;
     for (auto&m: out.merk) so.append(m);
     for (auto&m: err.merk) se.append(m);
