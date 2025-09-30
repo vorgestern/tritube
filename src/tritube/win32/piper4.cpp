@@ -199,6 +199,57 @@ struct inputchannel_async
     }
 };
 
+int entertain(HANDLE hprocess, inputchannel_async&out, function<void()>handle_out, inputchannel_async&err, function<void()>handle_err)
+{
+    int rcx=-1;
+    bool fterm=false;
+
+    out.read();
+    err.read();
+
+    auto handle_process=[&fterm, &rcx, hprocess]()
+    {
+        unsigned long exitcode=STILL_ACTIVE;
+        if (GetExitCodeProcess(hprocess, &exitcode))
+        {
+            if (exitcode!=STILL_ACTIVE){ rcx=exitcode; fterm=true; }
+        }
+        else fterm=true;
+    };
+
+    const int numobj=3;
+    HANDLE objects[numobj]={out.ol.hEvent, err.ol.hEvent, hprocess};
+    function<void()>handlers[numobj]={handle_out, handle_err, handle_process};
+    unsigned nc=0;
+    while (!fterm)
+    {
+        ++nc;
+        if (nc&1)
+        {
+            objects[0]=out.ol.hEvent; handlers[0]=handle_out;
+            objects[1]=err.ol.hEvent; handlers[1]=handle_err;
+        }
+        else
+        {
+            objects[0]=err.ol.hEvent; handlers[0]=handle_err;
+            objects[1]=out.ol.hEvent; handlers[1]=handle_out;
+        }
+        const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
+        if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj) handlers[r-WAIT_OBJECT_0]();
+        else if (r>=WAIT_ABANDONED_0 && r<WAIT_ABANDONED_0+numobj) break; // TSNH
+        else if (r==WAIT_TIMEOUT)
+        {
+            if (out.closed && err.closed) fterm=true;
+            break;
+        }
+        else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
+        else                    { fterm=true; break; } // TSNH
+    }
+    out.closehandles();
+    err.closehandles();
+    return rcx;
+}
+
 rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
 {
     prochelper ph;
@@ -212,12 +263,6 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
         vector<string>merk {};
     } out={ph.read_from_stdout, ph.olout},
       err={ph.read_from_stderr, ph.olerr};
-
-    int rcx=-1;
-    bool fterm=false;
-
-    out.read();
-    err.read();
 
     auto handle_stderr=[&err]()
     {
@@ -233,46 +278,7 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
         out.read();
     };
 
-    auto handle_process=[&fterm, &rcx, ph]()
-    {
-        unsigned long exitcode=STILL_ACTIVE;
-        if (GetExitCodeProcess(ph.process, &exitcode))
-        {
-            if (exitcode!=STILL_ACTIVE){ rcx=exitcode; fterm=true; }
-        }
-        else fterm=true;
-    };
-
-    const int numobj=3;
-    HANDLE objects[numobj]={ph.olout.hEvent, ph.olerr.hEvent, ph.process};
-    function<void()>handlers[numobj]={handle_stdout, handle_stderr, handle_process};
-    unsigned nc=0;
-    while (!fterm)
-    {
-        ++nc;
-        if (nc&1)
-        {
-            objects[0]=out.ol.hEvent; handlers[0]=handle_stdout;
-            objects[1]=err.ol.hEvent; handlers[1]=handle_stderr;
-        }
-        else
-        {
-            objects[0]=err.ol.hEvent; handlers[0]=handle_stderr;
-            objects[1]=out.ol.hEvent; handlers[1]=handle_stdout;
-        }
-        const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
-        if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj) handlers[r-WAIT_OBJECT_0]();
-        else if (r>=WAIT_ABANDONED_0 && r<WAIT_ABANDONED_0+numobj) break; // TSNH
-        else if (r==WAIT_TIMEOUT)
-        {
-            if (out.closed && err.closed) fterm=true;
-            break;
-        }
-        else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
-        else                    { fterm=true; break; } // TSNH
-    }
-    out.closehandles();
-    err.closehandles();
+    const int rcx=entertain(ph.process, out, handle_stdout, err, handle_stderr);
     string so, se;
     for (auto&m: out.merk) so.append(m);
     for (auto&m: err.merk) se.append(m);
