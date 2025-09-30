@@ -14,16 +14,19 @@ void demo_default()
 
 int main(int argc, char*argv[])
 {
-    if constexpr (false && argc>1)
+    if (argc>1)
     {
-        const string prog=argv[1];
-        string args;
-        for (auto j=2; j<argc; ++j) args.append(j>2?" "s+argv[j]:argv[j]);
-        auto Text=exec_sync<string, xfpath>(prog, args);
-        if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
-        else cout<<"No output for '"<<prog<<" "<<args<<"\n";
+        if (auto p=applpath<xfpath>(argv[1]); p.has_value())
+        {
+            string args;
+            for (auto j=2; j<argc; ++j) args.append(j>2?" "s+argv[j]:argv[j]);
+            auto Text=exec_simple<string>(p.value(), args);
+            if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
+            else cout<<"No output for '"<<p.value().string()<<" "<<args<<"\n";
+        }
+        else cout<<"Executable not found for '"<<argv[1]<<"'\n";
     }
-    else if (argc>1)
+    else if constexpr (false && argc>1)
     {
         if (auto p=applpath<xfpath>(argv[1]); p.has_value())
         {
