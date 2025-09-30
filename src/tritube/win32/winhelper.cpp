@@ -3,6 +3,7 @@
 #include <string>
 #include <format>
 #include <filesystem>
+#include <functional>
 #include "winhelper.h"
 
 using namespace std;
@@ -85,4 +86,55 @@ int startpiped(prochelper&ph, const string&exec, string_view arguments)
         CloseHandle(write_stdin);
         return 3;
     }
+}
+
+int entertain(HANDLE hprocess, inputchannel_async&out, function<void()>handle_out, inputchannel_async&err, function<void()>handle_err)
+{
+    int rcx=-1;
+    bool fterm=false;
+
+    out.read();
+    err.read();
+
+    auto handle_process=[&fterm, &rcx, hprocess]()
+    {
+        unsigned long exitcode=STILL_ACTIVE;
+        if (GetExitCodeProcess(hprocess, &exitcode))
+        {
+            if (exitcode!=STILL_ACTIVE){ rcx=exitcode; fterm=true; }
+        }
+        else fterm=true;
+    };
+
+    const int numobj=3;
+    HANDLE objects[numobj]={out.ol.hEvent, err.ol.hEvent, hprocess};
+    function<void()>handlers[numobj]={handle_out, handle_err, handle_process};
+    unsigned nc=0;
+    while (!fterm)
+    {
+        ++nc;
+        if (nc&1)
+        {
+            objects[0]=out.ol.hEvent; handlers[0]=handle_out;
+            objects[1]=err.ol.hEvent; handlers[1]=handle_err;
+        }
+        else
+        {
+            objects[0]=err.ol.hEvent; handlers[0]=handle_err;
+            objects[1]=out.ol.hEvent; handlers[1]=handle_out;
+        }
+        const auto r=WaitForMultipleObjects(numobj, objects, FALSE, 1000);
+        if (r>=WAIT_OBJECT_0 && r<WAIT_OBJECT_0+numobj) handlers[r-WAIT_OBJECT_0]();
+        else if (r>=WAIT_ABANDONED_0 && r<WAIT_ABANDONED_0+numobj) break; // TSNH
+        else if (r==WAIT_TIMEOUT)
+        {
+            if (out.closed && err.closed) fterm=true;
+            break;
+        }
+        else if (r==WAIT_FAILED){ fterm=true; break; } // TSNH
+        else                    { fterm=true; break; } // TSNH
+    }
+    out.closehandles();
+    err.closehandles();
+    return rcx;
 }
