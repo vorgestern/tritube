@@ -45,7 +45,6 @@ string tritube::piper4_o(fspath&fullpath, string_view args)
     {
         string so;
         for (auto&m: out.merk) so.append(m);
-cout<<"piper4_o ok; "<<so<<"\n";
         return so;
     }
     else return {};

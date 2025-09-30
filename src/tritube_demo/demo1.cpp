@@ -7,9 +7,13 @@ using namespace tritube;
 
 void demo_default()
 {
-    auto Text=exec_sync<string, xfpath>("git.exe", "--version");
-    if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
-    else cout<<"No output for 'git.exe --version\n";
+    if (auto p=applpath<xfpath>("git.exe"); p.has_value())
+    {
+        auto Text=exec_simple<string>(p.value(), "--version");
+        if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
+        else cout<<"No output for 'git.exe --version\n";
+    }
+    else cout<<"Executable not found for 'git.exe'\n";
 }
 
 int main(int argc, char*argv[])
