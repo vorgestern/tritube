@@ -9,7 +9,7 @@ void demo_default()
 {
     if (auto p=applpath(xfpath, "git.exe"); p.has_value())
     {
-        auto Text=piper4_o(p.value(), "--version");
+        auto Text=piper_o(p.value(), "--version");
         if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
         else cout<<"No output for 'git.exe --version\n";
     }
@@ -66,14 +66,14 @@ int main(int argc, char*argv[])
             case print: cout<<"'"<<p.value()<<" "<<args<<"'\n"; break;
             case out:
             {
-                auto Text=piper4_o(p.value(), args);
+                auto Text=piper_o(p.value(), args);
                 if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
                 else cout<<"No output for '"<<p.value().string()<<" "<<args<<"\n";
                 break;
             }
             case roe:
             {
-                auto [rc, out, err]=piper4_roe(p.value(), args);
+                auto [rc, out, err]=piper_roe(p.value(), args);
                 cout<<  "== return code =================================\n"<<rc
                     <<"\n== stdout ======================================\n"<<out
                     <<"\n== stderr ======================================\n"<<err
@@ -82,7 +82,7 @@ int main(int argc, char*argv[])
             }
             case ROE:
             {
-                auto [rc, Out, Err]=piper4_ROE(p.value(), args);
+                auto [rc, Out, Err]=piper_roev(p.value(), args);
                 cout<<  "== return code =================================\n"<<rc
                     <<"\n== stdout ======================================\n";
                 for (auto&k: Out) cout<<"== "<<k<<"\n";
@@ -93,7 +93,7 @@ int main(int argc, char*argv[])
             }
             case linewise:
             {
-                auto rc=piper4_linewise(p.value(), args,
+                auto rc=piper_linewise(p.value(), args,
                     [](const string&X){ cout<<">> "<<X<<" <<\n"; },
                     [](const string&X){ cout<<"?? "<<X<<" ??\n"; });
                 cout<<  "== return code =================================\n"<<rc

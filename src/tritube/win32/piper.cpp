@@ -8,7 +8,7 @@ using namespace std;
 using namespace tritube;
 using fspath=filesystem::path;
 
-string tritube::piper4_o(fspath&fullpath, string_view args)
+string tritube::piper_o(fspath&fullpath, string_view args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -46,7 +46,7 @@ string tritube::piper4_o(fspath&fullpath, string_view args)
     else return {};
 }
 
-rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
+rc_out_err tritube::piper_roe(fspath&fullpath, string_view args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -82,7 +82,7 @@ rc_out_err tritube::piper4_roe(fspath&fullpath, string_view args)
     return {rcx, so, se};
 }
 
-rc_Out_Err tritube::piper4_ROE(fspath&fullpath, string_view args)
+rc_Out_Err tritube::piper_roev(fspath&fullpath, string_view args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -143,7 +143,7 @@ rc_Out_Err tritube::piper4_ROE(fspath&fullpath, string_view args)
     return {rcx, Out, Err};
 }
 
-int tritube::piper4_linewise(fspath&fullpath, string_view args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
+int tritube::piper_linewise(fspath&fullpath, string_view args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
