@@ -22,29 +22,30 @@ static vector<fspath> pathdirectories()
 
 // ============================================================================
 
-template<> optional<fspath> tritube::applpath<xfliteral>(string_view versuch)
+optional<fspath> tritube::applpath(xfind f, string_view appp)
 {
-    if (filesystem::exists(versuch)) return versuch;
-    else return {};
-}
-
-template<> optional<fspath> tritube::applpath<xfrelative>(string_view simple_name)
-{
-    error_code ec;
-    auto here=filesystem::current_path(ec);
-    if (ec) return {};
-    auto versuch=here / simple_name;
-    if (filesystem::exists(versuch)) return versuch;
-    else return {};
-}
-
-template<> optional<fspath> tritube::applpath<xfpath>(string_view relpath)
-{
-    auto Paths=pathdirectories();
-    for (auto&k: Paths)
+    fspath appl(appp);
+    switch (f)
     {
-        const auto versuch=k / relpath;
-        if (filesystem::exists(versuch)) return versuch;
+        case xfdirect:
+        {
+            if (appl.is_absolute()) return filesystem::exists(appl)?appl:optional<fspath>();
+            error_code ec;
+            auto here=filesystem::current_path(ec);
+            if (ec) return {};
+            auto versuch=here / appl;
+            return filesystem::exists(versuch)?versuch:optional<fspath>();
+        }
+        case xfpath:
+        {
+            auto Paths=pathdirectories();
+            for (auto&k: Paths)
+            {
+                const auto versuch=k / appl;
+                if (filesystem::exists(versuch)) return versuch;
+            }
+            return {};
+        }
+        default: return {};
     }
-    return {};
 }
