@@ -25,7 +25,7 @@ void demo_default()
 
 int main(int argc, char*argv[])
 {
-    enum {print, out, roe, ROE, linewise} usecase=out;
+    enum {print, out, roe, roev, linewise} usecase=out;
     xfind search=xfdirect;
     auto a=1;
     for (a=1; a<argc; ++a)
@@ -38,11 +38,11 @@ int main(int argc, char*argv[])
             if (s=="print") usecase=print;
             else if (s=="stdout") usecase=out;
             else if (s=="roe") usecase=roe;
-            else if (s=="ROE") usecase=ROE;
+            else if (s=="roev") usecase=roev;
             else if (s=="linewise") usecase=linewise;
             else
             {
-                cerr<<"Usecase '"<<s<<"' unknown (known: stdout, roe).\n";
+                cerr<<"Usecase '"<<s<<"' unknown (known: print, stdout, roe, roev, linewise).\n";
                 exit(1);
             }
         }
@@ -66,7 +66,6 @@ int main(int argc, char*argv[])
         args.clear();
         for (auto j=a; j<argc; ++j) args.push_back(argv[j]);
     }
-    // cout<<"usecase "<<(int)usecase<<"\nsearch "<<(int)search<<"\nappl "<<appl<<"\nargs '"<<args<<"'\n";
     if (auto p=applpath(search, appl); p.has_value())
     {
         switch (usecase)
@@ -88,7 +87,7 @@ int main(int argc, char*argv[])
                     <<"\n================================================\n";
                 break;
             }
-            case ROE:
+            case roev:
             {
                 auto [rc, Out, Err]=piper_roev(p.value(), args);
                 cout<<  "== return code =================================\n"<<rc
