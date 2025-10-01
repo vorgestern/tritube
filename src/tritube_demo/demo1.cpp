@@ -18,7 +18,7 @@ void demo_default()
 
 int main(int argc, char*argv[])
 {
-    enum {print, out, roe} usecase=out;
+    enum {print, out, roe, ROE} usecase=out;
     xfind search=xfdirect;
     auto a=1;
     for (a=1; a<argc; ++a)
@@ -31,6 +31,7 @@ int main(int argc, char*argv[])
             if (s=="print") usecase=print;
             else if (s=="stdout") usecase=out;
             else if (s=="roe") usecase=roe;
+            else if (s=="ROE") usecase=ROE;
             else
             {
                 cerr<<"Usecase '"<<s<<"' unknown (known: stdout, roe).\n";
@@ -76,6 +77,17 @@ int main(int argc, char*argv[])
                     <<"\n== stdout ======================================\n"<<out
                     <<"\n== stderr ======================================\n"<<err
                     <<"\n================================================\n";
+                break;
+            }
+            case ROE:
+            {
+                auto [rc, Out, Err]=exec_simple<rc_Out_Err>(p.value(), args);
+                cout<<  "== return code =================================\n"<<rc
+                    <<"\n== stdout ======================================\n";
+                for (auto&k: Out) cout<<"== "<<k<<"\n";
+                cout<<"== stderr ======================================\n";
+                for (auto&k: Err) cout<<"== "<<k<<"\n";
+                cout<<"================================================\n";
                 break;
             }
         }
