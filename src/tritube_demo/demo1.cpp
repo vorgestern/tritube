@@ -18,7 +18,7 @@ void demo_default()
 
 int main(int argc, char*argv[])
 {
-    enum {print, out, roe, ROE} usecase=out;
+    enum {print, out, roe, ROE, linewise} usecase=out;
     xfind search=xfdirect;
     auto a=1;
     for (a=1; a<argc; ++a)
@@ -32,6 +32,7 @@ int main(int argc, char*argv[])
             else if (s=="stdout") usecase=out;
             else if (s=="roe") usecase=roe;
             else if (s=="ROE") usecase=ROE;
+            else if (s=="linewise") usecase=linewise;
             else
             {
                 cerr<<"Usecase '"<<s<<"' unknown (known: stdout, roe).\n";
@@ -88,6 +89,15 @@ int main(int argc, char*argv[])
                 cout<<"== stderr ======================================\n";
                 for (auto&k: Err) cout<<"== "<<k<<"\n";
                 cout<<"================================================\n";
+                break;
+            }
+            case linewise:
+            {
+                auto rc=piper4_linewise(p.value(), args,
+                    [](const string&X){ cout<<">> "<<X<<" <<\n"; },
+                    [](const string&X){ cout<<"?? "<<X<<" ??\n"; });
+                cout<<  "== return code =================================\n"<<rc
+                    <<"\n================================================\n";
                 break;
             }
         }

@@ -4,6 +4,7 @@
 #include <vector>
 #include <optional>
 #include <filesystem>
+#include <functional>
 
 namespace tritube
 {
@@ -14,6 +15,8 @@ namespace tritube
     std::string piper4_o(std::filesystem::path&fullpath, std::string_view args);
     rc_out_err piper4_roe(std::filesystem::path&fullpath, std::string_view args);
     rc_Out_Err piper4_ROE(std::filesystem::path&fullpath, std::string_view args);
+    int piper4_linewise(std::filesystem::path&fullpath, std::string_view args,
+        std::function<void(const std::string&)>process_stdout, std::function<void(const std::string&)>process_stderr);
 
     std::optional<std::filesystem::path> applpath(xfind, std::string_view exec_name);
 

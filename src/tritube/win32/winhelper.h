@@ -13,13 +13,16 @@ struct inputchannel_async
 {
     HANDLE read_from_child;
     OVERLAPPED ol;
+    char*buffer;
+    DWORD cap;
+    inputchannel_async(HANDLE input, const OVERLAPPED&ol1, char*buffer1, DWORD cap1): read_from_child(input), ol(ol1), buffer(buffer1), cap(cap1){}
+
     bool closed {false};
-    char buffer[1024];
     DWORD nr {0};
     void read()
     {
         nr=0;
-        if (!ReadFile(read_from_child, buffer, sizeof buffer, &nr, &ol))
+        if (!ReadFile(read_from_child, buffer, cap, &nr, &ol))
         {
             switch (GetLastError())
             {
