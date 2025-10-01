@@ -1,17 +1,20 @@
 
 #include <windows.h>
+#include <vector>
 #include <string>
 #include <format>
 #include <filesystem>
 #include <functional>
-#include "winhelper.h"
 
 using namespace std;
 using fspath=filesystem::path;
 
-int startpiped(prochelper&ph, const string&exec, string_view arguments)
+#include "winhelper.h"
+
+int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
 {
-    string commandline=format("\"{}\" {}", exec, arguments);
+    string commandline=format("\"{}\"", exec);
+    for (auto&k: arguments) commandline.append(" "+k);
 
     HANDLE newstdin, write_stdin, newstdout, read_stdout, newstderr, read_stderr;
 

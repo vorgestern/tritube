@@ -5,11 +5,18 @@
 using namespace std;
 using namespace tritube;
 
+static ostream&operator<<(ostream&out, const vector<string>&args)
+{
+    unsigned j=0;
+    for (auto&k: args) out<<(j++>0?" ":"")<<k;
+    return out;
+}
+
 void demo_default()
 {
     if (auto p=applpath(xfpath, "git.exe"); p.has_value())
     {
-        auto Text=piper_o(p.value(), "--version");
+        auto Text=piper_o(p.value(), {"--version"});
         if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
         else cout<<"No output for 'git.exe --version\n";
     }
@@ -51,12 +58,13 @@ int main(int argc, char*argv[])
             }
         }
     }
-    string appl="git.exe", args="--version";
+    string appl="git.exe";
+    vector<string> args={"--version"};
     if (a<argc)
     {
         appl=argv[a++];
         args.clear();
-        for (auto j=a; j<argc; ++j) args.append(j>a?" "s+argv[j]:argv[j]);
+        for (auto j=a; j<argc; ++j) args.push_back(argv[j]);
     }
     // cout<<"usecase "<<(int)usecase<<"\nsearch "<<(int)search<<"\nappl "<<appl<<"\nargs '"<<args<<"'\n";
     if (auto p=applpath(search, appl); p.has_value())

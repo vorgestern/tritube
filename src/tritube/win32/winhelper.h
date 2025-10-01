@@ -7,7 +7,7 @@ struct prochelper
     OVERLAPPED olout,            olerr;
 };
 
-int startpiped(prochelper&ph, const std::string&exec, std::string_view arguments);
+int startpiped(prochelper&, const std::string&exec, const vector<string>&args);
 
 struct inputchannel_async
 {

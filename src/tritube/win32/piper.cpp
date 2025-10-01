@@ -2,13 +2,14 @@
 #include <tritube/tritube.h>
 #include <windows.h>
 #include <functional>
-#include "winhelper.h"
 
 using namespace std;
 using namespace tritube;
 using fspath=filesystem::path;
 
-string tritube::piper_o(fspath&fullpath, string_view args)
+#include "winhelper.h"
+
+string tritube::piper_o(fspath&fullpath, const vector<string>&args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -46,7 +47,7 @@ string tritube::piper_o(fspath&fullpath, string_view args)
     else return {};
 }
 
-rc_out_err tritube::piper_roe(fspath&fullpath, string_view args)
+rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -82,7 +83,7 @@ rc_out_err tritube::piper_roe(fspath&fullpath, string_view args)
     return {rcx, so, se};
 }
 
-rc_Out_Err tritube::piper_roev(fspath&fullpath, string_view args)
+rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
@@ -143,7 +144,7 @@ rc_Out_Err tritube::piper_roev(fspath&fullpath, string_view args)
     return {rcx, Out, Err};
 }
 
-int tritube::piper_linewise(fspath&fullpath, string_view args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
+int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
