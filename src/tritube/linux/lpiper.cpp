@@ -2,6 +2,7 @@
 #include <tritube/tritube.h>
 #include <functional>
 #include <numeric>
+#include <iostream>
 
 #include "../../forkpipes.h"
 
@@ -12,11 +13,13 @@ using namespace std;
 using namespace tritube;
 using fspath=filesystem::path;
 
-static int exec_neu(const vector<string>&args)
+static int exec_neu(const fspath&appl, const vector<string>&args)
 {
-    vector<char*>argv(args.size()+1);
-    for (auto j=0u; j<args.size(); ++j) argv[j]=strdup(args[j].c_str());
-    argv[args.size()]=nullptr;
+    vector<char*>argv(args.size()+2);
+    auto j=0u;
+    argv[j++]=strdup(appl.string().c_str());
+    for (auto&k: args) argv[j++]=strdup(k.c_str());
+    argv[j++]=nullptr;
     return execvp(argv[0], &argv[0]);
 }
 
@@ -26,23 +29,20 @@ static int process_inputs(forkpipes3&PP, string&X)
     vector<string> Items;
     while (!isclosed(PP))
     {
-        const auto [c,rc]=PP.readchar();
-        switch (rc)
+        const auto [c,fd]=PP.readchar();
+        switch (fd)
         {
             case 1: // stdin
             {
-                if (c=='\n'||c=='\r')
+                if (c!='\r') OutLine.push_back(c);
+                if (c=='\n')
                 {
                     Items.push_back(OutLine);
                     OutLine.clear();
                 }
-                else OutLine.push_back(c);
                 break;
             }
-            case 2: // errin
-            {
-                break;
-            }
+            case 2: break;
         }
     }
     auto total=accumulate(Items.begin(), Items.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
@@ -57,13 +57,13 @@ string tritube::piper_o(fspath&fullpath, const vector<string>&args)
     forkpipes3 PP;
     if (ischild(PP))
     {
-        exit(exec_neu({"g++", "-Werror", "-Wall", "-o", "hoppla.o", "-x", "c++", "-"}));
+        exit(exec_neu(fullpath, args));
     }
     else if (isparent(PP))
     {
         close(parent_write(PP));
         string Out;
-        const int rc=process_inputs(PP, Out);
+        [[maybe_unused]] const int rc=process_inputs(PP, Out);
         return Out;
     }
     else return {};

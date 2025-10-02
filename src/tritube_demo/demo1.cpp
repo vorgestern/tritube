@@ -75,7 +75,7 @@ int main(int argc, char*argv[])
             {
                 auto Text=piper_o(p.value(), args);
                 if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
-                else cout<<"No output for '"<<p.value().string()<<" "<<args<<"\n";
+                else cout<<"No output for '"<<p.value().string()<<" "<<args<<"'\n";
                 break;
             }
             case roe:

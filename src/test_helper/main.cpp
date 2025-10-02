@@ -16,7 +16,7 @@ int main(int argc, char*argv[])
         else if (arg=="-p" && a<argc-1)
         {
             auto p=atoi(argv[++a]);
-            if (p>0 && p<2000) pause_ms=p;
+            if (p>0 && p<=10000) pause_ms=p;
         }
     }
     for (int j=0; j<10; ++j)
