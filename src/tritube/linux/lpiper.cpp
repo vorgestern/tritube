@@ -23,10 +23,11 @@ static int exec_neu(const fspath&appl, const vector<string>&args)
     return execvp(argv[0], &argv[0]);
 }
 
-static int process_inputs(forkpipes3&PP, string&X)
+static int process_inputs(forkpipes3&PP, vector<string>&Out, vector<string>&Err)
 {
-    string OutLine;
-    vector<string> Items;
+    Out.clear();
+    Err.clear();
+    string OutLine, ErrLine;
     while (!isclosed(PP))
     {
         const auto [c,fd]=PP.readchar();
@@ -34,21 +35,26 @@ static int process_inputs(forkpipes3&PP, string&X)
         {
             case 1: // stdin
             {
-                if (c!='\r') OutLine.push_back(c);
                 if (c=='\n')
                 {
-                    Items.push_back(OutLine);
+                    Out.push_back(OutLine);
                     OutLine.clear();
                 }
+                else if (c!='\r') OutLine.push_back(c);
                 break;
             }
-            case 2: break;
+            case 2:
+            {
+                if (c=='\n')
+                {
+                    Err.push_back(ErrLine);
+                    ErrLine.clear();
+                }
+                else if (c!='\r') ErrLine.push_back(c);
+                break;
+            }
         }
     }
-    auto total=accumulate(Items.begin(), Items.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
-    X.clear();
-    X.reserve(total);
-    for (auto&j: Items) X.append(j);
     return 0;
 }
 
@@ -62,20 +68,53 @@ string tritube::piper_o(fspath&fullpath, const vector<string>&args)
     else if (isparent(PP))
     {
         close(parent_write(PP));
-        string Out;
-        [[maybe_unused]] const int rc=process_inputs(PP, Out);
-        return Out;
+        vector<string> Out, Err;
+        [[maybe_unused]] const int rc=process_inputs(PP, Out, Err);
+        auto total=accumulate(Out.begin(), Out.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
+        string Result;
+        Result.reserve(total);
+        for (auto&j: Out) Result.append(j+"\n");
+        return Result;
     }
     else return {};
 }
 
 rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args)
 {
+    forkpipes3 PP;
+    if (ischild(PP))
+    {
+        exit(exec_neu(fullpath, args));
+    }
+    else if (isparent(PP))
+    {
+        close(parent_write(PP));
+        vector<string> OutLines, ErrLines;
+        [[maybe_unused]] const int rc=process_inputs(PP, OutLines, ErrLines);
+        string Out, Err;
+        auto totalout=accumulate(OutLines.begin(), OutLines.end(), 0, [](size_t acc, string&X){ return acc+X.size(); }),
+             totalerr=accumulate(ErrLines.begin(), ErrLines.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
+        Out.reserve(totalout); for (auto&k: OutLines) Out.append(k+"\n");
+        Err.reserve(totalerr); for (auto&k: ErrLines) Err.append(k+"\n");
+        return {rc, Out, Err};
+    }
     return {-1, {}, {}};
 }
 
 rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args)
 {
+    forkpipes3 PP;
+    if (ischild(PP))
+    {
+        exit(exec_neu(fullpath, args));
+    }
+    else if (isparent(PP))
+    {
+        close(parent_write(PP));
+        vector<string> Out, Err;
+        [[maybe_unused]] const int rc=process_inputs(PP, Out, Err);
+        return {rc, Out, Err};
+    }
     return {-1, {}, {}};
 }
 
