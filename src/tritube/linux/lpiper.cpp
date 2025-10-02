@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <unistd.h>
+#include <sys/wait.h>
 
 using namespace std;
 using namespace tritube;
@@ -55,7 +56,13 @@ static int process_inputs(forkpipes3&PP, vector<string>&Out, vector<string>&Err)
             }
         }
     }
-    return 0;
+    if (const int pid=childpid(PP); pid>0)
+    {
+        int stat=0;
+        waitpid(pid, &stat, 0);
+        return WEXITSTATUS(stat);
+    }
+    else return -1;
 }
 
 string tritube::piper_o(fspath&fullpath, const vector<string>&args)
