@@ -70,12 +70,13 @@ int main(int argc, char*argv[])
     {
         switch (usecase)
         {
-            case print: cout<<"'"<<p.value()<<" "<<args<<"'\n"; break;
+            case print: cout<<"'"<<p.value()<<" "<<args<<"'\n"; exit(p.has_value()?0:1); break;
             case out:
             {
                 auto Text=piper_o(p.value(), args);
                 if (Text.size()>0) cout<<"======================\n"<<Text<<"\n======================\n";
                 else cout<<"No output for '"<<p.value().string()<<" "<<args<<"'\n";
+                exit(Text.size()>0?0:1);
                 break;
             }
             case roe:
@@ -85,7 +86,7 @@ int main(int argc, char*argv[])
                     <<"\n== stdout ======================================\n"<<out
                     <<"\n== stderr ======================================\n"<<err
                     <<"\n================================================\n";
-                break;
+                exit(rc==0?0:1);
             }
             case roev:
             {
@@ -96,7 +97,7 @@ int main(int argc, char*argv[])
                 cout<<"== stderr ======================================\n";
                 for (auto&k: Err) cout<<"== "<<k<<"\n";
                 cout<<"================================================\n";
-                break;
+                exit(rc==0?0:1);
             }
             case linewise:
             {
@@ -105,10 +106,13 @@ int main(int argc, char*argv[])
                     [](const string&X){ cout<<"?? "<<X<<" ??\n"; });
                 cout<<  "== return code =================================\n"<<rc
                     <<"\n================================================\n";
-                break;
+                exit(rc==0?0:1);
             }
         }
     }
-    else cout<<"Executable not found for '"<<appl<<"'\n";
-    return 0;
+    else
+    {
+        cout<<"Executable not found for '"<<appl<<"'\n";
+        exit(1);
+    }
 }
