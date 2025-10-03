@@ -13,7 +13,7 @@ static vector<fspath> pathdirectories()
     size_t pos=0;
     while (true)
     {
-        auto s=P.find_first_of(";:", pos);
+        auto s=P.find_first_of(':', pos);
         if (s!=P.npos){ result.push_back(P.substr(pos, s-pos)); pos=s+1; }
         else{ result.push_back(P.substr(pos)); break; }
     }
