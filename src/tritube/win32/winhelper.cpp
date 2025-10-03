@@ -142,6 +142,7 @@ int entertain(HANDLE hprocess, inputchannel_async&out, function<void()>handle_ou
     return rcx;
 }
 
+#include <algorithm>
 #include <iostream>
 #include <tritube/tritube.h>
 
@@ -154,36 +155,74 @@ static vector<fspath> pathdirectories()
     size_t pos=0;
     while (true)
     {
-        auto s=P.find_first_of(";:", pos);
+        auto s=P.find_first_of(';', pos);
         if (s!=P.npos){ result.push_back(P.substr(pos, s-pos)); pos=s+1; }
         else{ result.push_back(P.substr(pos)); break; }
     }
     return result;
 }
 
+static vector<fspath> acceptableextensions()
+{
+    vector<fspath>result;
+    const string P=getenv("PathExt");
+    size_t pos=0;
+    while (true)
+    {
+        auto s=P.find_first_of(';', pos);
+        if (s!=P.npos){ result.push_back(P.substr(pos, s-pos)); pos=s+1; }
+        else{ result.push_back(P.substr(pos)); break; }
+    }
+    return result;
+}
+
+[[maybe_unused]] static ostream&operator<<(ostream&out, const vector<fspath>&X)
+{
+    for_each(X.begin(), X.end(), [n=0](const fspath&p) mutable { cout<<(n++>0?" ":"")<<p.string(); });
+    return out;
+}
+
 // ============================================================================
+
+static bool exists1(const fspath&X)
+{
+    const auto ext=X.extension();
+    const auto acceptable=acceptableextensions();
+    const bool known=!ext.empty() && any_of(acceptable.begin(), acceptable.end(), [ext](const fspath&X)->bool { return X==ext; });
+    if (known) return filesystem::exists(X);
+    return any_of(acceptable.begin(), acceptable.end(), [X](const fspath&E)->bool
+    {
+        const fspath P=X.string()+E.string();
+        const bool e=filesystem::exists(P);
+        return e;
+    });
+}
 
 optional<fspath> tritube::applpath(xfind f, string_view appp)
 {
     fspath appl(appp);
+
     switch (f)
     {
         case xfdirect:
         {
-            if (appl.is_absolute()) return filesystem::exists(appl)?appl:optional<fspath>();
-            error_code ec;
-            auto here=filesystem::current_path(ec);
-            if (ec) return {};
-            auto versuch=here / appl;
-            return filesystem::exists(versuch)?versuch:optional<fspath>();
+            if (!appl.is_absolute())
+            {
+                error_code ec;
+                const auto here=filesystem::current_path(ec);
+                if (ec) return {};
+                appl=here/appl;
+            }
+            return exists1(appl)?appl:optional<fspath>();
         }
         case xfpath:
         {
+            if (appl.is_absolute()) return exists1(appl)?appl:optional<fspath>();
             auto Paths=pathdirectories();
             for (auto&k: Paths)
             {
                 const auto versuch=k / appl;
-                if (filesystem::exists(versuch)) return versuch;
+                if (exists1(versuch)) return versuch;
             }
             return {};
         }
