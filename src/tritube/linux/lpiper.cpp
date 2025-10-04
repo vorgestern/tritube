@@ -1,14 +1,10 @@
 
 #include <tritube/tritube.h>
-#include <functional>
 #include <numeric>
-#include <iostream>
+#include <cstring>
+#include <sys/wait.h>
 
 #include "forkpipes.h"
-
-#include <cstring>
-#include <unistd.h>
-#include <sys/wait.h>
 
 using namespace std;
 using namespace tritube;

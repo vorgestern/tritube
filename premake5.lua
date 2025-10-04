@@ -34,7 +34,7 @@ else
     alias "mm=clear && make -C MP clean && make -C MP -j 16"
     alias "jj=bear -- make -j 16 -BC gmake all"
     gg() {
-        grep -rnw "$1" src include
+        grep -rnw "$1" src include examples
     }
     ]]
     for k,v in pairs {
