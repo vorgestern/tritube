@@ -87,7 +87,10 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
         CloseHandle(read_stdout);
         CloseHandle(read_stderr);
         CloseHandle(write_stdin);
-        return 3;
+        // printf("CreateProcess failed; LastError=%d\n", GetLastError());
+        // printf("    exec '%s'\n", exec.c_str());
+        // printf("    args '%s'\n", commandline.data());
+        return 4;
     }
 }
 
@@ -184,18 +187,18 @@ static vector<fspath> acceptableextensions()
 
 // ============================================================================
 
-static bool exists1(const fspath&X)
+static optional<fspath> exists_as(const fspath&X)
 {
     const auto ext=X.extension();
     const auto acceptable=acceptableextensions();
-    const bool known=!ext.empty() && any_of(acceptable.begin(), acceptable.end(), [ext](const fspath&X)->bool { return X==ext; });
-    if (known) return filesystem::exists(X);
-    return any_of(acceptable.begin(), acceptable.end(), [X](const fspath&E)->bool
+    const bool extension_accepted=!ext.empty() && any_of(acceptable.begin(), acceptable.end(), [ext](const fspath&X)->bool { return X==ext; });
+    if (extension_accepted && filesystem::exists(X)) return X;
+    for (auto&a: acceptable)
     {
-        const fspath P=X.string()+E.string();
-        const bool e=filesystem::exists(P);
-        return e;
-    });
+        const fspath P=X.string()+a.string();
+        if (filesystem::exists(P)) return P;
+    }
+    return {};
 }
 
 optional<fspath> tritube::applpath(xfind f, string_view appp)
@@ -213,17 +216,13 @@ optional<fspath> tritube::applpath(xfind f, string_view appp)
                 if (ec) return {};
                 appl=here/appl;
             }
-            return exists1(appl)?appl:optional<fspath>();
+            return exists_as(appl);
         }
         case xfpath:
         {
-            if (appl.is_absolute()) return exists1(appl)?appl:optional<fspath>();
-            auto Paths=pathdirectories();
-            for (auto&k: Paths)
-            {
-                const auto versuch=k / appl;
-                if (exists1(versuch)) return versuch;
-            }
+            if (appl.is_absolute()) return exists_as(appl)?appl:optional<fspath>();
+            const auto Paths=pathdirectories();
+            for (auto&k: Paths) if (const auto k1=exists_as(k/appl); k1.has_value()) return k1;
             return {};
         }
         default: return {};
