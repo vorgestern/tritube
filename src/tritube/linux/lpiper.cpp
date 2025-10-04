@@ -65,6 +65,45 @@ static int process_inputs(forkpipes3&PP, vector<string>&Out, vector<string>&Err)
     else return -1;
 }
 
+int process_inputs(forkpipes3&PP, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
+{
+    string OutLine, ErrLine;
+    while (!isclosed(PP))
+    {
+        const auto [c,fd]=PP.readchar();
+        switch (fd)
+        {
+            case 1: // stdin
+            {
+                if (c=='\n')
+                {
+				    process_stdout(OutLine);
+                    OutLine.clear();
+                }
+                else if (c!='\r') OutLine.push_back(c);
+                break;
+            }
+            case 2:
+            {
+                if (c=='\n')
+                {
+				    process_stderr(ErrLine);
+                    ErrLine.clear();
+                }
+                else if (c!='\r') ErrLine.push_back(c);
+                break;
+            }
+        }
+    }
+    if (const int pid=childpid(PP); pid>0)
+    {
+        int stat=0;
+        waitpid(pid, &stat, 0);
+        return WEXITSTATUS(stat);
+    }
+    else return -1;
+}
+
 string tritube::piper_o(fspath&fullpath, const vector<string>&args)
 {
     forkpipes3 PP;
@@ -125,10 +164,20 @@ rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args)
         [[maybe_unused]] const int rc=process_inputs(PP, Out, Err);
         return {rc, Out, Err};
     }
-    return {-1, {}, {}};
+    else return {-1, {}, {}};
 }
 
 int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
 {
-    return -1;
+    forkpipes3 PP;
+    if (ischild(PP))
+    {
+        exit(exec_neu(fullpath, args));
+    }
+    else if (isparent(PP))
+    {
+        close(parent_write(PP));
+        return process_inputs(PP, process_stdout, process_stderr);
+    }
+    else return -1;
 }
