@@ -8,6 +8,10 @@ require "src.tritube"
 require "src.tritube_demo"
 require "src.test_helper"
 
+if package.loaded.Workspace.system=="linux" then
+	require "examples"
+end
+
 info()
 
 if package.loaded.Workspace.system=="windows" then

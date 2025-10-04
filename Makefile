@@ -4,9 +4,7 @@ CXXFLAGS := -std=c++20 -Werror -Wall -Wno-error=unused-variable
 
 .PHONY: dirs
 
-all: dirs compile1 echoserver echodemo libtritube.a
-dirs:; @mkdir -p b/examples
-clean:; rm -rf b ./compile1 ./echoserver ./echodemo libtritube.a
+all: dirs compile1 echoserver echodemo
 
 b/%.o: src/%.cpp src/forkpipes.h
 	@echo compile $<
@@ -24,12 +22,3 @@ echoserver: b/examples/echoserver.o libtritube.a
 
 echodemo: b/examples/echodemo.o libtritube.a
 	@g++ -o $@ $(LDFLAGS) $^
-
-b/forkpipes.o: src/forkpipes.cpp src/forkpipes.h
-	@g++ -o $@ -c $(CXXFLAGS) $<
-b/forkpipes3.o: src/forkpipes3.cpp src/forkpipes.h
-	@g++ -o $@ -c $(CXXFLAGS) $<
-
-libtritube.a: b/forkpipes.o b/forkpipes3.o
-	@echo $@
-	@ar -crs $@ $^
