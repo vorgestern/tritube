@@ -4,7 +4,7 @@
 #include <numeric>
 #include <iostream>
 
-#include "../../forkpipes.h"
+#include "forkpipes.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -76,12 +76,15 @@ string tritube::piper_o(fspath&fullpath, const vector<string>&args)
     {
         close(parent_write(PP));
         vector<string> Out, Err;
-        [[maybe_unused]] const int rc=process_inputs(PP, Out, Err);
-        auto total=accumulate(Out.begin(), Out.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
-        string Result;
-        Result.reserve(total);
-        for (auto&j: Out) Result.append(j+"\n");
-        return Result;
+        if (const int rc=process_inputs(PP, Out, Err); rc==0)
+		{
+			auto total=accumulate(Out.begin(), Out.end(), 0, [](size_t acc, string&X){ return acc+X.size(); });
+			string Result;
+			Result.reserve(total);
+			for (auto&j: Out) Result.append(j+"\n");
+			return Result;
+		}
+		else return {};
     }
     else return {};
 }
