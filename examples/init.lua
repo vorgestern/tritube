@@ -22,12 +22,10 @@ if nil then
 	table.insert(Workspace.projects, ConsoleApp "echodemo")
 end
 
-if nil then
-	project "compile1"
-	kind "ConsoleApp"
-	files "compile1.cpp"
-	includedirs "../include"
-	links "tritube"
-	cppdialect "C++20"
-	table.insert(Workspace.projects, ConsoleApp "compile1")
-end
+project "compile1"
+kind "ConsoleApp"
+files "compile1.cpp"
+includedirs "../include"
+links "tritube"
+cppdialect "C++20"
+table.insert(Workspace.projects, ConsoleApp "compile1")

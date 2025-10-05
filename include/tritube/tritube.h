@@ -19,20 +19,21 @@ namespace tritube
     // from the PATHEXT environment variable.
     std::optional<std::filesystem::path> applpath(xfind searchtype, std::string_view exec);
 
-    // Return output on stdout as a string (if exitcode==0), else an empty string. 
-    std::string piper_o(std::filesystem::path&fullpath, const std::vector<std::string>&args);
+    // Return output on stdout as a string (if exitcode==0), else an empty string.
+    std::string piper_o(std::filesystem::path&fullpath, const std::vector<std::string>&args, std::string_view initial_input="");
 
     // Return [exitcode, output on stdout, output on stderr].
     // The outputs are represented as strings.
-    rc_out_err piper_roe(std::filesystem::path&fullpath, const std::vector<std::string>&args);
+    rc_out_err piper_roe(std::filesystem::path&fullpath, const std::vector<std::string>&args, std::string_view initial_input="");
 
     // Return [exitcode, output on stdout, output on stderr].
     // The outputs are represented as vector<string> with newlines removed.
-    rc_Out_Err piper_roev(std::filesystem::path&fullpath, const std::vector<std::string>&args);
+    rc_Out_Err piper_roev(std::filesystem::path&fullpath, const std::vector<std::string>&args, std::string_view initial_input="");
 
     // Return the exitcode only, pass output lines on stdout or stderr to corresponding handlers.
     // Handlers may be empty.
     int piper_linewise(std::filesystem::path&fullpath, const std::vector<std::string>&args,
         std::function<void(const std::string&)>process_stdout,
-        std::function<void(const std::string&)>process_stderr);
+        std::function<void(const std::string&)>process_stderr,
+        std::string_view initial_input="");
 }
