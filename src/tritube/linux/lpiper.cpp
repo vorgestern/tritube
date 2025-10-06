@@ -109,7 +109,7 @@ pair<bool, size_t>write_initial_input(int fd, string_view initial_input)
     size_t numwritten=0;
     while (numwritten<initial_input.size() && !receiver_closed)
     {
-        const auto nw=write(fd, initial_input.data()+numwritten, initial_input.size());
+        const auto nw=write(fd, initial_input.data()+numwritten, initial_input.size()-numwritten);
         if (nw<0)
         {
             const auto e=errno;
