@@ -9,12 +9,37 @@ using fspath=filesystem::path;
 
 #include "winhelper.h"
 
-string tritube::piper_o(fspath&fullpath, const vector<string>&args)
+pair<bool, size_t>write_initial_input(HANDLE write_to_stdin, string_view initial_input)
+{
+    bool receiver_closed=false;
+    DWORD numwritten=0;
+    while (numwritten<initial_input.size() && !receiver_closed)
+    {
+        DWORD nw=0;
+        const bool f=WriteFile(write_to_stdin, initial_input.data(), (DWORD)initial_input.size(), &nw, nullptr);
+        numwritten+=nw;
+        if (!f)
+        {
+            switch (GetLastError())
+            {
+                case ERROR_BROKEN_PIPE: receiver_closed=true; break;
+                case ERROR_INVALID_USER_BUFFER: break;
+                case ERROR_NOT_ENOUGH_MEMORY: break;
+                case ERROR_NOT_ENOUGH_QUOTA: break;
+                case ERROR_OPERATION_ABORTED: receiver_closed=true; break;
+            }
+        }
+    }
+    return {receiver_closed, numwritten};
+}
+
+string tritube::piper_o(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
     if (rcstart!=0) return {-1,{},{}};
 
+    [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
 
     char outbuffer[1024], errbuffer[1024];
@@ -47,12 +72,13 @@ string tritube::piper_o(fspath&fullpath, const vector<string>&args)
     else return {};
 }
 
-rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args)
+rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
     if (rcstart!=0) return {-1,{},{}};
 
+    [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
 
     char outbuffer[1024], errbuffer[1024];
@@ -83,12 +109,13 @@ rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args)
     return {rcx, so, se};
 }
 
-rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args)
+rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
     if (rcstart!=0) return {-1,{},{}};
 
+    [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
 
     char outbuffer[1024], errbuffer[1024];
@@ -144,12 +171,13 @@ rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args)
     return {rcx, Out, Err};
 }
 
-int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr)
+int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr, string_view initial_input)
 {
     prochelper ph;
     const int rcstart=startpiped(ph, fullpath.string(), args);
     if (rcstart!=0) return -1;
 
+    [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
 
     char outbuffer[1], errbuffer[1];
