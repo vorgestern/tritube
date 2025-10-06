@@ -8,6 +8,10 @@ if not ok then
     Install it from http:github.com/vorgestern/ulutest."]])
 end
 
+local myos=package.config:sub(1,1)=="\\" and "win32" or "linux"
+local exesuffix=myos=="win32" and ".exe" or ""
+local exepattern=myos=="win32" and "%.EXE" or ""
+
 local function mytest(name) return function(list) list.name=name return list end end
 local function tt(name) return function(func) return ulutest.TT(name, func) end end
 
@@ -32,12 +36,12 @@ local ut={
 
 mytest "available" {
     tt "tritube_demo (system under test)" (function(t)
-        local ok=io.open("bin/tritube_demo.exe", "r")
+        local ok=io.open("bin/tritube_demo"..exesuffix, "r")
         if ok then ok:close() end
         t:ASSERT(ok)
     end),
     tt "helper (test_helper)" (function(t)
-        local ok=io.open("bin/test_helper.exe", "r")
+        local ok=io.open("bin/test_helper"..exesuffix, "r")
         if ok then ok:close() end
         t:ASSERT(ok)
     end),
@@ -47,7 +51,7 @@ mytest "tritube_demo" {
     tt "usecase_print" (function(t)
         local X=pipe_lines([[tritube_demo --usecase print -- test_helper]])
         -- print(table.concat(X,"\n"))
-        local m=X[1]:match "test_helper%.EXE\""
+        local m=X[1]:match "test_helper"..exepattern.."\""
         -- print(m)
         t:ASSERT_EQ("string", type(m))
     end),
