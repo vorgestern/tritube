@@ -26,7 +26,7 @@ void demo_default()
 int main(int argc, char*argv[])
 {
     enum {print, out, roe, roev, linewise} usecase=out;
-    xfind search=xfdirect;
+    xfind search=xfpath;
     auto a=1;
     for (a=1; a<argc; ++a)
     {
