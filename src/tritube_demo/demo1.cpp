@@ -101,9 +101,17 @@ int main(int argc, char*argv[])
     }
     if (auto p=applpath(search, appl); p.has_value())
     {
+        const auto pp=p.value();
         switch (usecase)
         {
-            case print: cout<<"'"<<p.value()<<" "<<args<<"'\n"; exit(p.has_value()?0:1); break;
+            case print:
+            {
+                auto f=pp.string();
+                if (auto wo=f.find_first_of(' ', 0); wo!=string::npos) cout<<'"'<<f<<'"'<<args<<"\n";
+                else                                                   cout<<f<<args<<"\n";
+                exit(0);
+                break;
+            }
             case out:
             {
                 auto Text=piper_o(p.value(), args);
@@ -181,7 +189,7 @@ int main(int argc, char*argv[])
     }
     else
     {
-        cout<<"Executable not found for '"<<appl<<"'\n";
+        cerr<<"Executable not found for '"<<appl<<"'\n";
         exit(1);
     }
 }

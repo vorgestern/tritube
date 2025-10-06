@@ -50,9 +50,9 @@ mytest "available" {
 mytest "tritube_demo" {
     tt "usecase_print" (function(t)
         local X=pipe_lines([[tritube_demo --usecase print -- test_helper]])
-        -- print(table.concat(X,"\n"))
+        t:PRINTF("%s", table.concat(X,"\n"))
         local m=X[1]:match "test_helper"..exepattern.."\""
-        -- print(m)
+        t:PRINTF("%s", m)
         t:ASSERT_EQ("string", type(m))
     end),
     tt "usecase_stdout" (function(t)
