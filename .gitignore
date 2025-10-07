@@ -11,3 +11,4 @@ oo
 vs2022
 gmake
 alias
+userlocal_*.lua
