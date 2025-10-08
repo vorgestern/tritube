@@ -9,7 +9,7 @@ using fspath=filesystem::path;
 
 #include "winhelper.h"
 
-pair<bool, size_t>write_initial_input(HANDLE write_to_stdin, string_view initial_input)
+static pair<bool, size_t>write_initial_input(HANDLE write_to_stdin, string_view initial_input)
 {
     bool receiver_closed=false;
     DWORD numwritten=0;
@@ -187,35 +187,27 @@ int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function
     } out({ph.read_from_stdout, ph.olout, outbuffer, sizeof outbuffer}),
       err({ph.read_from_stderr, ph.olerr, errbuffer, sizeof errbuffer});
 
-    auto ls=[](string&X, char buffer[], size_t len, function<void(const string&)> process_line)
-    {
-        if (len!=1) return;
-        switch (buffer[0])
-        {
-            case '\n':
-            {
-                process_line(X);
-                X.clear();
-                break;
-            }
-            case '\r': break;
-            default: X.push_back(buffer[0]); break;
-        }
-    };
-
     string Out, Err;
 
-    auto handle_stderr=[ls,process_stderr,&err,&Err]()
+    auto handle_stderr=[process_stderr,&err,&Err]()
     {
-        if (err.nr<=0) return;
-        if (process_stderr) ls(Err, err.buffer, err.nr, process_stderr);
+        if (err.nr==1 && process_stderr) switch (err.buffer[0])
+        {
+            case '\n': process_stderr(Err); Err.clear(); break;
+            case '\r': break;
+            default: Err.push_back(err.buffer[0]); break;
+        }
         err.read();
     };
 
-    auto handle_stdout=[ls,process_stdout,&out,&Out]()
+    auto handle_stdout=[process_stdout,&out,&Out]()
     {
-        if (out.nr<=0) return;
-        if (process_stdout) ls(Out, out.buffer, out.nr, process_stdout);
+        if (out.nr==1 && process_stdout) switch (out.buffer[0])
+        {
+            case '\n': process_stdout(Out); Out.clear(); break;
+            case '\r': break;
+            default: Out.push_back(out.buffer[0]); break;
+        }
         out.read();
     };
 

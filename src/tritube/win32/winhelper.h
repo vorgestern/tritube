@@ -32,4 +32,8 @@ struct inputchannel_async
     void closehandles();
 };
 
+// Keep child process going, processing its outputs on stdout and stderr.
+// return code
+// -1          Exit code of child process could not be determined.
+// otherwise   Exit code of child process
 int entertain(HANDLE hprocess, inputchannel_async&out, std::function<void()>handle_out, inputchannel_async&err, std::function<void()>handle_err);
