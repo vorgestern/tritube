@@ -94,6 +94,27 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
     }
 }
 
+void inputchannel_async::read()
+{
+    nr=0;
+    if (!ReadFile(read_from_child, buffer, cap, &nr, &ol))
+    {
+        switch (GetLastError())
+        {
+            case ERROR_IO_PENDING: break;
+            default:
+            case ERROR_BROKEN_PIPE: closed=true; break;
+        }
+    }
+}
+
+void inputchannel_async::closehandles()
+{
+    CloseHandle(ol.hEvent);
+    CloseHandle(read_from_child);
+    closed=true;
+}
+
 int entertain(HANDLE hprocess, inputchannel_async&out, function<void()>handle_out, inputchannel_async&err, function<void()>handle_err)
 {
     int rcx=-1;
