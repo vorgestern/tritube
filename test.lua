@@ -28,7 +28,20 @@ local pipe_lines=function(command)
         else return {}, math.tointeger(rc), status
         end
     else
-        error(string.format("Error running '%s'", command))
+        error(string.format("Error running pipe_lines '%s'", command))
+    end
+end
+
+local pipe_string=function(command)
+    local pipe=io.popen(command)
+    if pipe then
+        local s=pipe:read "*a"
+        local flag,status,rc=pipe:close()
+        if flag then return s, math.tointeger(rc), status
+        else return "", math.tointeger(rc), status
+        end
+    else
+        error(string.format("Error running pipe_string '%s'", command))
     end
 end
 
@@ -47,7 +60,7 @@ mytest "available" {
     end),
 },
 
-mytest "tritube_demo" {
+mytest "usecases" {
     tt "usecase_print" (function(t)
         local X=pipe_lines([[tritube_demo --usecase print -- test_helper]])
         t:PRINTF("%s", table.concat(X,"\n"))
@@ -83,6 +96,15 @@ mytest "tritube_demo" {
         t:ASSERT_EQ(9, math.tointeger(numout))
         t:ASSERT_EQ(1, math.tointeger(numerr))
     end)
+},
+
+mytest "avalanche" {
+    tt "stdout" (function(t)
+        local num=5120 -- 5120 ok, 5121 nicht ok
+        local X=pipe_string([[tritube_demo --usecase stdout --raw -- test_helper -a ]]..num)
+        -- t:PRINTF("'%s'", X)
+        t:ASSERT_EQ(num, X:len())
+    end),
 },
 
 }
