@@ -7,7 +7,15 @@ struct prochelper
     OVERLAPPED olout,            olerr;
 };
 
-int startpiped(prochelper&, const std::string&exec, const vector<string>&args);
+// return {op,errorcode}:
+//     op          the operation that failed
+//     errorcode   the result of GetLastError for the failed operation
+// Operation:
+// 0        Ok
+// 1,2,3    Failed to create pipe for stdin,stdout,stderr or child process.
+// 11,12,13 Failed to make pipe handles heritable.
+// 4        Failed to create child process.
+std::pair<int,int> startpiped(prochelper&, const std::string&exec, const vector<string>&args);
 
 struct inputchannel_async
 {

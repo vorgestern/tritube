@@ -36,8 +36,8 @@ pair<bool, size_t>write_initial_input(HANDLE write_to_stdin, string_view initial
 string tritube::piper_o(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
-    const int rcstart=startpiped(ph, fullpath.string(), args);
-    if (rcstart!=0) return {-1,{},{}};
+    const auto [rcstart,e]=startpiped(ph, fullpath.string(), args);
+    if (rcstart!=0 || e!=0) return {};
 
     [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
@@ -75,8 +75,8 @@ string tritube::piper_o(fspath&fullpath, const vector<string>&args, string_view 
 rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
-    const int rcstart=startpiped(ph, fullpath.string(), args);
-    if (rcstart!=0) return {-1,{},{}};
+    const auto [rcstart,e]=startpiped(ph, fullpath.string(), args);
+    if (rcstart!=0) return {e,{},{}};
 
     [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
@@ -112,8 +112,8 @@ rc_out_err tritube::piper_roe(fspath&fullpath, const vector<string>&args, string
 rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args, string_view initial_input)
 {
     prochelper ph;
-    const int rcstart=startpiped(ph, fullpath.string(), args);
-    if (rcstart!=0) return {-1,{},{}};
+    const auto [rcstart,e]=startpiped(ph, fullpath.string(), args);
+    if (rcstart!=0) return {e,{},{}};
 
     [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);
@@ -174,8 +174,8 @@ rc_Out_Err tritube::piper_roev(fspath&fullpath, const vector<string>&args, strin
 int tritube::piper_linewise(fspath&fullpath, const vector<string>&args, function<void(const string&)>process_stdout, function<void(const string&)>process_stderr, string_view initial_input)
 {
     prochelper ph;
-    const int rcstart=startpiped(ph, fullpath.string(), args);
-    if (rcstart!=0) return -1;
+    const auto [rcstart,e]=startpiped(ph, fullpath.string(), args);
+    if (rcstart!=0) return e;
 
     [[maybe_unused]] auto [f,nw]=write_initial_input(ph.write_to_stdin, initial_input);
     CloseHandle(ph.write_to_stdin);

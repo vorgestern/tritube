@@ -11,7 +11,7 @@ using fspath=filesystem::path;
 
 #include "winhelper.h"
 
-int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
+pair<int,int> startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
 {
     string commandline=format("\"{}\"", exec);
     for (auto&k: arguments) commandline.append(" "+k);
@@ -28,26 +28,28 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
     sa.nLength=sizeof(SECURITY_ATTRIBUTES);
     sa.bInheritHandle=true;                          // allow inheritable handles
 
-    if (!CreatePipe(&newstdin, &write_stdin, &sa, 0)) return 1;
-    if (!SetHandleInformation(write_stdin, HANDLE_FLAG_INHERIT, 0)) return 11;
+    if (!CreatePipe(&newstdin, &write_stdin, &sa, 0)) return {1,GetLastError()};
+    if (!SetHandleInformation(write_stdin, HANDLE_FLAG_INHERIT, 0)) return {11,GetLastError()};
 
     if (!CreatePipe(&read_stdout, &newstdout, &sa, 0))
     {
+        auto e=GetLastError();
         CloseHandle(newstdin);
         CloseHandle(write_stdin);
-        return 2;
+        return {2,e};
     }
-    if (!SetHandleInformation(read_stdout, HANDLE_FLAG_INHERIT, 0)) return 12;
+    if (!SetHandleInformation(read_stdout, HANDLE_FLAG_INHERIT, 0)) return {12,GetLastError()};
 
     if (!CreatePipe(&read_stderr, &newstderr, &sa, 0))
     {
+        auto e=GetLastError();
         CloseHandle(newstdin);
         CloseHandle(write_stdin);
         CloseHandle(newstdout);
         CloseHandle(write_stdin);
-        return 3;
+        return {3,e};
     }
-    if (!SetHandleInformation(read_stderr, HANDLE_FLAG_INHERIT, 0)) return 13;
+    if (!SetHandleInformation(read_stderr, HANDLE_FLAG_INHERIT, 0)) return {13,GetLastError()};
 
     // Erzeuge ein startup-info aus dem fuer diesen Prozess gueltigen.
     // Ueberschreibe in der Kopie die Angaben zu den Standard-IO-Kanaelen
@@ -64,6 +66,7 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
 
     PROCESS_INFORMATION pi;
     const BOOL f=CreateProcess(exec.c_str(), commandline.data(),0L,0L,TRUE,0,0L,0L,&si,&pi);
+    auto e=f?0:GetLastError();
 
     CloseHandle(newstdin);
     CloseHandle(newstdout);
@@ -80,7 +83,7 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
         ZeroMemory(&ph.olerr, sizeof(OVERLAPPED));
         ph.olout.hEvent=CreateEvent(&sa, FALSE, FALSE, "event_stdout");
         ph.olerr.hEvent=CreateEvent(&sa, FALSE, FALSE, "event_stderr");
-        return 0;
+        return {0,e};
     }
     else
     {
@@ -90,7 +93,7 @@ int startpiped(prochelper&ph, const string&exec, const vector<string>&arguments)
         // printf("CreateProcess failed; LastError=%d\n", GetLastError());
         // printf("    exec '%s'\n", exec.c_str());
         // printf("    args '%s'\n", commandline.data());
-        return 4;
+        return {4,e};
     }
 }
 
